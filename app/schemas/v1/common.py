@@ -1,0 +1,26 @@
+
+from enum import Enum
+
+
+class BlockchainType(Enum):
+    BESU_PRIVATE = "BESU_PRIVATE"
+    
+class UserAction(str, Enum):
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    USE = "USE"
+
+class HashType(Enum):
+    SHA3_256 = "SHA3_256"
+    SHA3_512 = "SHA3_512"
+
+class UpdateDetails(Enum):
+    RELEASE = "RELEASE"
+    PUBLISH = "PUBLISH"
+    INVALIDATE = "INVALIDATE"
+    REACTIVATE = "REACTIVATE"
+    UNPUBLISH = "UNPUBLISH"
+    LICENSE_UPDATED = "LICENSE_UPDATED"
+    PID_UPDATED = "PID_UPDATED"
+    CONTACT_INFORMATION_UPDATED = "CONTACT_INFORMATION_UPDATED"
+    AUTHOR_CHANGED = "AUTHOR_CHANGED"
