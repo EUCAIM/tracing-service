@@ -5,7 +5,7 @@ metadata:
   name: tracing-service-init
   namespace: tracing-service
 spec:
-  backoffLimit: 1
+  backoffLimit: 0
   template:
     spec:
       restartPolicy: Never
@@ -24,7 +24,7 @@ spec:
             - name: tracing-service-secrets
               mountPath: /opt/tracing/settings_secret.yml
               subPath: settings_secret.yml
-            - name: tracing-service-secrets
+            - name: immudb-secrets
               mountPath: /opt/tracing/IMMUDB_ADMIN_PASSWORD
               subPath: IMMUDB_ADMIN_PASSWORD
           securityContext:
@@ -36,13 +36,16 @@ spec:
       volumes:
         - name: tracing-service-config
           configMap:
-            defaultMode: 420
+            defaultMode: 400
             name: tracing-service-config
+            optional: false
         - name: tracing-service-secrets
           secret:
-            defaultMode: 420
-            name: tracing-service-secrets
+            defaultMode: 400
+            secretName: tracing-service-secrets
+            optional: false
         - name: immudb-secrets
           secret:
-            defaultMode: 420
-            name: immudb-secrets
+            defaultMode: 400
+            secretName: immudb-secrets
+            optional: false

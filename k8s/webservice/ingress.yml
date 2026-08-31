@@ -1,0 +1,22 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: tracing-service
+  namespace: tracing-service
+  annotations:
+    nginx.ingress.kubernetes.io/limit-methods: "GET,HEAD,OPTIONS"
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+spec:
+  rules:
+    - host: <host>
+      http:
+        paths:
+          - path: /tracing-service/api/v2/traces/ 
+            pathType: Prefix
+            backend:
+              service:
+                name: tracing-service
+                port:
+                  number: 8080

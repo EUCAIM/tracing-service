@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immudb-config
+  namespace: tracing-service
+data:
+  IMMUDB_DIR: /data
+  IMMUDB_WEB_SERVER: "false"
+  IMMUDB_SWAGGERUI: "false"
+  IMMUDB_METRICS_SERVER: "false"
+  IMMUDB_DEVMODE: "false"
