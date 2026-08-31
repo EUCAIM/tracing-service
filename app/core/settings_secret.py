@@ -16,8 +16,10 @@ class SettingsSecret(BaseModel):
 settings_secret_path = os.getenv(f"{ENV_VARS_PREFIX}APP_SETTINGS_SECRET", None)
 
 if settings_secret_path is not None:
+    logger.info("Loading secrets from file")
     settings_secret = SettingsSecret(**load_settings(settings_secret_path))
 else:
+    logger.info("Loading secrets from env")
     settings_secret = SettingsSecret(
         database_password=os.environ[f"{ENV_VARS_PREFIX}DATABASE__PASSWORD"]
         )
