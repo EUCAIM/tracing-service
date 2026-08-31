@@ -1,6 +1,6 @@
 from joserfc.jwt import decode, Token, JWTClaimsRegistry
 from joserfc.jwk import KeySet, KeySetSerialization
-from joserfc.errors import JoseError, InvalidClaimError
+from joserfc.errors import JoseError, InvalidClaimError, ExpiredTokenError, MissingClaimError
 import httpx
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -98,7 +98,7 @@ async def verify_token(token: str) -> User:
             keyset: KeySet = await get_keyset(force_refresh=True)
             decoded_token = decode(token, keyset)
         except JoseError as e:
-            logger.error(f"Token deconding failed: {e}")
+            logger.error(f"Token decoding failed: {e}")
             raise HTTPException(status_code=401, detail="Invalid token")
             
 
@@ -107,6 +107,12 @@ async def verify_token(token: str) -> User:
     except InvalidClaimError as e:
         logger.error(f"Claims validation failed: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
+    except MissingClaimError as e:
+        logger.error(f"Missing claim error: {e}")
+        raise HTTPException(status_code=401, detail="Missing claim")
+    except ExpiredTokenError as e:
+        logger.error(f"Expired token: {e}")
+        raise HTTPException(status_code=401, detail="Expired token")
 
     user = User(user_id = decoded_token.claims["sub"],
         roles = decoded_token.claims
