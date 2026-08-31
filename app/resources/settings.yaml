@@ -19,6 +19,8 @@ oidc:
     "tracing"
   ]
 api:
+  # The prefix after the host/port that is added to the root of the path
+  prefix:
   v2:
     # Max num of traces that are returned by the get traces GET call
     default_traces_limit: 20

@@ -22,6 +22,7 @@ class V2Settings(BaseModel):
     default_traces_limit: int
     
 class ApiSettings(BaseModel):
+    prefix: str
     v2: V2Settings
 
 
