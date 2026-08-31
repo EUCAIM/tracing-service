@@ -1,6 +1,6 @@
 from joserfc.jwt import decode, Token, JWTClaimsRegistry
 from joserfc.jwk import KeySet, KeySetSerialization
-from joserfc.errors import JoseError
+from joserfc.errors import JoseError, InvalidClaimError
 import httpx
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from app.core.settings import Settings
 from pydantic import TypeAdapter
 import time
+import asyncio
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,64 +26,53 @@ _OPENID_CONFIG = f"{_OIDC_ISSUER}/.well-known/openid-configuration"
 
 _JWKS_KEYSET: KeySet | None = None
 _JWKS_CACHE_EXPIRY: float = 0
+_KEYSET_LOCK = asyncio.Lock()
 
 _JWKS_CACHE_WAIT = 300
+
+
 
 @dataclass
 class User:
     user_id: str
-    username: str
     roles: list[str]
 
-async def get_keyset() -> KeySet:
+async def get_keyset(force_refresh: bool = False) -> KeySet:
     global _JWKS_KEYSET, _JWKS_CACHE_EXPIRY
 
-    now = time.time()
-
-    if _JWKS_KEYSET is not None and now < _JWKS_CACHE_EXPIRY:
+    now = time.monotonic()
+    if not force_refresh and _JWKS_KEYSET is not None and now < _JWKS_CACHE_EXPIRY:
         return _JWKS_KEYSET
 
-    async with httpx.AsyncClient() as client:
-        config = await client.get(_OPENID_CONFIG)
-        config.raise_for_status()
+    async with _KEYSET_LOCK:
+        now = time.monotonic()
+        if not force_refresh and _JWKS_KEYSET is not None and now < _JWKS_CACHE_EXPIRY:
+            return _JWKS_KEYSET
+        
+        async with httpx.AsyncClient() as client:
+            config = await client.get(_OPENID_CONFIG)
+            config.raise_for_status()
 
-        jwks_uri = config.json()["jwks_uri"]
+            jwks_uri = config.json()["jwks_uri"]
 
-        jwks_response = await client.get(jwks_uri)
-        jwks_response.raise_for_status()
+            jwks_response = await client.get(jwks_uri)
+            jwks_response.raise_for_status()
 
-        try:
-            validated_jwks = adapter.validate_python(
-                jwks_response.json()
-            )
-        except Exception as e:
-            logger.error("Error validating Keycloak keys response")
-            logger.error(e)
-            raise HTTPException(status_code=500, detail="Internal server error")
+            try:
+                validated_jwks = adapter.validate_python(
+                    jwks_response.json()
+                )
+            except Exception as e:
+                logger.error("Error validating Keycloak keys response")
+                logger.error(e)
+                raise HTTPException(status_code=500, detail="Internal server error")
 
     _JWKS_KEYSET = KeySet.import_key_set(validated_jwks)
     _JWKS_CACHE_EXPIRY = now + _JWKS_CACHE_WAIT
 
     return _JWKS_KEYSET
 
-# async def get_jwks() -> KeySetSerialization:
-#     async with httpx.AsyncClient() as client:
-#         config = await client.get(_OPENID_CONFIG)
-#         config.raise_for_status()
-#         config_json = config.json()
-#         jwks_uri = config_json["jwks_uri"]
-#         jwks = await client.get(jwks_uri)
-#         jwks.raise_for_status()
-#         json = jwks.json()
-#         try:
-#             validated_json = adapter.validate_python(json)
-#         except Exception as e:
-#             logger.error("Error validating Keycloak keys response")
-#             logger.error(e)
-#             raise HTTPException(status_code=500, detail="Internal server error")
-#         return validated_json
-
-async def verify_token(token: str) -> Token:
+async def verify_token(token: str) -> User:
     keyset: KeySet = await get_keyset()
     claims_registry = JWTClaimsRegistry(
         # Issuer (check if the issuers match)
@@ -92,30 +83,38 @@ async def verify_token(token: str) -> Token:
         exp={"essential": True},
         # Subject (Ensures a unique User ID exists in the token)
         sub={"essential": True},
-        # Prevent Token Type Confusion (This isn't a Refresh Token)
-        typ={"essential": True, "value": "Bearer"},
+        # # Prevent Token Type Confusion (This isn't a Refresh Token)
+        # typ={"essential": True, "value": "Bearer"},
         # Issued at (detect tokens with suspicious timestamps)
-        iat={"essential": True}
+        iat={"essential": True},
+        # # Not before 
+        # nbf={"essential": True}
     )
     try:
-        decoded_token = decode(
-            token,
-            keyset
-        )
-        # logger.info(decoded_token)
-        claims_registry.validate(decoded_token.claims)
+        decoded_token = decode(token, keyset)
+    except JoseError:
+        try:
+            logger.info("Try to get a new set of keys from Keycloak.")
+            keyset: KeySet = await get_keyset(force_refresh=True)
+            decoded_token = decode(token, keyset)
+        except JoseError as e:
+            logger.error(f"Token deconding failed: {e}")
+            raise HTTPException(status_code=401, detail="Invalid token")
+            
 
-        user = User(user_id = decoded_token.claims["sub"],
-            username = decoded_token.claims["preferred_username"],
-            roles = decoded_token.claims
-                .get("resource_access", {})
-                .get(settings.app.oidc.client, {})
-                .get("roles", [])
-        )
-        return user
-    except Exception as e:
-        logger.error(e)
+    try:
+        claims_registry.validate(decoded_token.claims)
+    except InvalidClaimError as e:
+        logger.error(f"Claims validation failed: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = User(user_id = decoded_token.claims["sub"],
+        roles = decoded_token.claims
+            .get("resource_access", {})
+            .get(settings.app.oidc.client, {})
+            .get("roles", [])
+    )
+    return user
 
 async def auth_dependency(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
     token = credentials.credentials
