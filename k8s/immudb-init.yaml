@@ -1,0 +1,48 @@
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tracing-service-init
+  namespace: tracing-service
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:        
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+        runAsNonRoot: true
+      containers:
+        - name: psql
+          image: tracing-service-init:1.0.0-alpha
+          volumeMounts:
+            - name: tracing-service-config
+              mountPath: /opt/tracing/settings.yml
+              subPath: settings.yml
+            - name: tracing-service-secrets
+              mountPath: /opt/tracing/settings_secret.yml
+              subPath: settings_secret.yml
+            - name: tracing-service-secrets
+              mountPath: /opt/tracing/IMMUDB_ADMIN_PASSWORD
+              subPath: IMMUDB_ADMIN_PASSWORD
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: tracing-service-config
+          configMap:
+            defaultMode: 420
+            name: tracing-service-config
+        - name: tracing-service-secrets
+          secret:
+            defaultMode: 420
+            name: tracing-service-secrets
+        - name: immudb-secrets
+          secret:
+            defaultMode: 420
+            name: immudb-secrets
