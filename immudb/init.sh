@@ -7,18 +7,18 @@ while getopts "h:p:a:s:u:" opt; do
     a) ADMIN_PASSWORD="$OPTARG" ;;
     u) USER="$OPTARG" ;;
     s) USER_PASSWORD="$OPTARG" ;;
+    d) DB_NAME="$OPTARG" ;;
     *) echo "Invalid option"; exit 1 ;;
   esac
 done
 
 shift $((OPTIND - 1))  # Remove parsed options from $@
 
-if [ -z "$HOST" ] || [ -z "$PORT" ] || [ -z "$ADMIN_PASSWORD" ] || [ -z "$USER" ] || [ -z "$USER_PASSWORD" ]; then
-  echo "Error: All of -h (ImmuDB host), -p (ImmuDB port), -a (immudb admin password), -u (user for the tracing app), and -s (password of the user for the tracing app) are required" >&2
+if [ -z "$HOST" ] || [ -z "$PORT" ] || [ -z "$ADMIN_PASSWORD" ] || [ -z "$USER" ] || [ -z "$USER_PASSWORD" ] || [ -z "$DB_NAME" ]; then
+  echo "Error: All of -h (ImmuDB host), -p (ImmuDB port), -a (immudb admin password), -u (user for the tracing app), -d (the name of the database used for tracing), and -s (password of the user for the tracing app) are required" >&2
   exit 1
 fi
 
-DB_NAME=tracing
 DEFAULT_DB=defaultdb
 SQL_SCRIPT="./v2.sql"
 
