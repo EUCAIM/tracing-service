@@ -1,0 +1,21 @@
+FROM postgres:18-alpine
+
+COPY ./immudb/init.sh /opt/tracing/
+COPY ./immudb/v2.sql /opt/tracing/
+
+WORKDIR /opt/tracing
+
+RUN apk add yq bash \
+    && addgroup --gid 1000 tracing \
+	&& adduser -D -u 1000 -G tracing tracing \
+	&& chown -R 1000:1000 /opt/tracing
+
+USER tracing
+
+ENV SETTINGS_PATH=/opt/tracing/settings.yml
+ENV IMMUDB_ADMIN_PASSWORD_PATH=/opt/tracing/IMMUDB_ADMIN_PASSWORD
+ENV SETTINGS_SECRET_PATH=/opt/tracing/settings_secret.yml
+
+
+ENTRYPOINT ["bash", "-c"]
+CMD ["/opt/tracing/init.sh -h \"$(yq -r '.database.host' $SETTINGS_PATH)\" -p \"$(yq -r '.database.port' $SETTINGS_PATH)\" -a \"$(cat $IMMUDB_ADMIN_PASSWORD_PATH)\" -u \"$(yq -r '.database.user' $SETTINGS_PATH)\" -s \"$(yq -r '.database_password' $SETTINGS_SECRET_PATH)\" -d \"$(yq -r '.database.name' $SETTINGS_PATH)\" "]
