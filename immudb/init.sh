@@ -1,6 +1,6 @@
 #!/bin/sh
 
-while getopts "h:p:a:s:u:" opt; do
+while getopts "h:p:a:s:u:d:" opt; do
   case "$opt" in
     h) HOST="$OPTARG" ;;
     p) PORT="$OPTARG" ;;
