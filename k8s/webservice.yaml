@@ -86,8 +86,8 @@ spec:
               mountPath: /opt/tracing/settings.yml
               subPath: settings.yml
             - name: tracing-service-secrets
-              mountPath: /opt/tracing/settings.yml
-              subPath: settings.yml
+              mountPath: /opt/tracing/settings_secret.yml
+              subPath: settings_secret.yml
           ports:
             - name: webservice
               containerPort: 8080
