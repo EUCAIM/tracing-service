@@ -12,20 +12,10 @@ from app.core.settings_secret import get_settings_secret
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# import argparse
-
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--config")
-# args = parser.parse_args()
-
-# init_settings(args.config)
-# print("here")
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     dbpool = get_dbpool()
     await dbpool.start(settings.app.database, get_settings_secret().database_password)
-    # app.state.pool = dbpool.get_pool()
     yield
     await dbpool.stop()
 
@@ -39,4 +29,3 @@ def root():
 
 app.include_router(router_api_v1)
 app.include_router(router_api_v2)
-
