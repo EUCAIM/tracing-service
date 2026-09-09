@@ -10,7 +10,6 @@ import datetime
 import uuid
 import logging
 import json
-import time
 logger = logging.getLogger(__name__)
 
 class TracesDatasetsManager(AbstractTracesManager):
@@ -21,7 +20,7 @@ class TracesDatasetsManager(AbstractTracesManager):
 
     async def add(self, caller_id: str, trace: TraceRequest) -> uuid.UUID:
         id = uuid.uuid4()
-        created_at = datetime.datetime.now(datetime.timezone.utc)
+        created_at = self.get_now()
         if isinstance(trace, DatasetCreateRequest):
             resources = []
             for r in trace.resources:
@@ -101,3 +100,6 @@ class TracesDatasetsManager(AbstractTracesManager):
                 details=trace.update_details)
         else:
             raise UnhandledTypeException(f"Unhandled type {type(trace).__name__}")
+
+    def get_now(self) -> datetime:
+        return datetime.datetime.now(datetime.timezone.utc)
