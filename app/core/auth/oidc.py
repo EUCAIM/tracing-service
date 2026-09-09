@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.settings import get_settings
 from app.core.logging import logging
+from .user_roles import UserRoles
 from dataclasses import dataclass
 from app.core.settings import Settings
 from pydantic import TypeAdapter
@@ -15,14 +16,10 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-settings: Settings = get_settings()
+# settings: Settings = get_settings()
 adapter = TypeAdapter(KeySetSerialization)
 
 security = HTTPBearer()
-
-
-_OIDC_ISSUER = f"{settings.app.oidc.url}/realms/{settings.app.oidc.realm}"
-_OPENID_CONFIG = f"{_OIDC_ISSUER}/.well-known/openid-configuration"
 
 _JWKS_KEYSET: KeySet | None = None
 _JWKS_CACHE_EXPIRY: float = 0
@@ -50,7 +47,10 @@ async def get_keyset(force_refresh: bool = False) -> KeySet:
             return _JWKS_KEYSET
         
         async with httpx.AsyncClient() as client:
-            config = await client.get(_OPENID_CONFIG)
+            settings: Settings = get_settings()
+            issuer = f"{settings.app.oidc.url}/realms/{settings.app.oidc.realm}"
+            openid_config = f"{issuer}/.well-known/openid-configuration"
+            config = await client.get(openid_config)
             config.raise_for_status()
 
             jwks_uri = config.json()["jwks_uri"]
@@ -73,10 +73,12 @@ async def get_keyset(force_refresh: bool = False) -> KeySet:
     return _JWKS_KEYSET
 
 async def verify_token(token: str) -> User:
+    settings: Settings = get_settings()
+    issuer = f"{settings.app.oidc.url}/realms/{settings.app.oidc.realm}"
     keyset: KeySet = await get_keyset()
     claims_registry = JWTClaimsRegistry(
         # Issuer (check if the issuers match)
-        iss={"essential": True, "value": _OIDC_ISSUER},
+        iss={"essential": True, "value": issuer},
         # Audiences (check if at least one of the app's defined values is avaialble in the token)
         aud={"essential": True, "values": settings.app.oidc.audiences},
         # Expiration Time (Fails if token is expired or missing 'exp')
@@ -128,7 +130,7 @@ async def auth_dependency(credentials: HTTPAuthorizationCredentials = Depends(se
     user = await verify_token(token)
     return user
 
-def require_role(role: str):
+def require_role(role: UserRoles):
     async def checker(user: User = Depends(auth_dependency)):
         if role not in user.roles:
             logger.error(f"user '{user.user_id}' does not have the role '{role}'")
