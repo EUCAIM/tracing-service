@@ -7,6 +7,12 @@ database:
   port: 5432
   # The name of the database
   name: tracing
+  # Pool settings
+  pool:
+    # Min num of threads in the pool
+    min_size: 3
+    # Max num of threads in the pool
+    max_size: 3
 oidc:
   # Base URL of the keycloak instance
   url: <URL_of_OIDC_provider>
