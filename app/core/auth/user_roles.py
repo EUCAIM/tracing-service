@@ -1,4 +1,4 @@
 from enum import Enum
 
-class UserRoles(Enum):
+class UserRoles(str, Enum):
     WRITER = "trace_writer"

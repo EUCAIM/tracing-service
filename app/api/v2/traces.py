@@ -44,7 +44,7 @@ async def get_traces(trace_id: str, user: User = Depends(auth_dependency),
 
 
 @traces_router_v2.post("/", tags=["traces"], status_code=200, response_model=CreateTraceResponse)
-async def post_trace(trace_request: TraceTypeRequest, user: User = Depends(require_role(UserRoles.WRITER.value)), 
+async def post_trace(trace_request: TraceTypeRequest, user: User = Depends(require_role(UserRoles.WRITER)), 
                     manager: TracesDatasetsManager = Depends(get_traces_datasets_manager)):
     id = await manager.add(caller_id=user.user_id, trace=trace_request)
     return CreateTraceResponse(id)
