@@ -1,6 +1,5 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from app.schemas.common import AppInfo
-from app.api.v1 import router_api_v1
 from app.api.v2 import router_api_v2
 from contextlib import asynccontextmanager
 from app.db.v2.dependencies import get_dbpool
@@ -27,5 +26,4 @@ app_info = AppInfo(version=settings.version, name=settings.app_name)
 def root():
     return app_info
 
-app.include_router(router_api_v1)
 app.include_router(router_api_v2)
