@@ -20,6 +20,7 @@ traces_router_v2 = APIRouter(prefix="/traces")
 async def get_traces(limit: int = Query(settings.app.api.v2.default_traces_limit, ge=1, le=_MAX_NUM_TRACES_PAGE, description="The max number of traces requested to be returned by this call."), 
                     skip: int = Query(0, ge=0, description="Number of items to skip for pagination."), 
                     datasetId: str | None = Query(None, description="The ID of the dataset that the traces must refer (at least once if the trace references multiple IDs)"), 
+                    userAction: str | None = Query(None, description="The user action one filters for."), 
                     user: User = Depends(auth_dependency),
                     manager: TracesDatasetsManager = Depends(get_traces_datasets_manager)):
     """
@@ -37,6 +38,9 @@ async def get_traces(limit: int = Query(settings.app.api.v2.default_traces_limit
     dataset_id: str | None
         Query parameter. The ID of the dataset that the traces must refer (at least once if the trace references multiple IDs).
         Default None.
+    userAction: str | None
+        The user action one filters for.
+        Default: None.
     user: User
         Dependency. The user information obtained after successful authentication.
     manager: TracesDatasetsManager
@@ -47,6 +51,8 @@ async def get_traces(limit: int = Query(settings.app.api.v2.default_traces_limit
         filter_fields: dict[str, str | int | bool] = {}
         if datasetId is not None:
             filter_fields["dataset_id"] = datasetId
+        if userAction is not None:
+            filter_fields["user_action"] = userAction
         traces,  total = await manager.get_traces(skip=skip, limit=limit, filter_fields=filter_fields)
         return Page(total=total, data=traces, skip=skip, limit=limit)
     except (UnhandledTypeException, DataIntegrityException) as e:
