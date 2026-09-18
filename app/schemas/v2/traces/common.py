@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from ...common import NonNullOrEmptyStr
 from app.models.v2.common_types import HashType
 
-
 class CreateDatasetResource(BaseModel):
 
     # The id of the submitted resource with the request to add a trace.

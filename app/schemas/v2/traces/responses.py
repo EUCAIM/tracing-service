@@ -1,30 +1,30 @@
 from pydantic import Field, BaseModel
 from typing import Annotated, Literal
-from annotated_types import MinLen
-from app.models.v2.common_types import HashType, UserAction, UpdateDetails, TraceVersion
+from app.models.v2.common_types import UserAction, UpdateDetails, TraceVersion
 from .common import CreateDatasetResource
 from datetime import datetime
 from uuid import UUID
+from dataclasses import dataclass
 
-class BaseResponse(BaseModel): 
+
+@dataclass
+class CreateTraceResponse:
+    ids: list[UUID]
+    group: UUID
+
+class TraceResponse(BaseModel): 
     id: UUID = Field(...)
     callerId: str = Field(...)
     createdAt: datetime = Field(...)
-    version: TraceVersion
-
-class TraceResponse(BaseResponse): 
-    version: Literal[TraceVersion.V2] = Field(frozen=True)
-
-    # The ID of the user (person, application, service etc.) that performed the traced action
-    userId: str = Field(...)
-    # # The action of a user (person, application, service etc.) represented by this trace
-    # userAction: UserAction = Field(...)
 
 
 class DatasetResponse(TraceResponse):
 
+    version: Literal[TraceVersion.V2] = Field(frozen=True)
     # The id of the dataset referenced by this trace
     datasetId: str = Field(...)
+    datasetGroupId: UUID = Field(...)
+    userId: str = Field(...)
 
 class CreateDatasetResponse(DatasetResponse): 
     userAction: Literal[UserAction.CREATE_DATASET] = Field(UserAction.CREATE_DATASET, frozen=True)
@@ -36,10 +36,8 @@ class UpdateDatasetResponse(DatasetResponse):
     # The details about the updated dataset, such as the performed action or the field that has been changed.
     details: UpdateDetails = Field(...)
 
-class UseDatasetResponse(TraceResponse):
+class UseDatasetResponse(DatasetResponse):
     userAction: Literal[UserAction.USE_DATASETS] = Field(UserAction.USE_DATASETS, frozen=True)
-    # The list of IDs used by the traced action
-    datasetsIds: Annotated[list[str], MinLen(1)] = Field(...)
     
     # the name of the tool used for this user action
     toolName: str = Field(...)

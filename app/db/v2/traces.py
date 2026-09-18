@@ -43,7 +43,7 @@ class TracesRepo:
                     INSERT INTO {self.DATASETS_TABLE} ({columns}) VALUES ({placeholders_joined})
                 """, mapped_values, prepare=False)
 
-    async def get_traces(self, limit, offset, filter_fields: dict[str, str | int | bool]) -> tuple[list[Trace], int]:
+    async def get_traces(self, limit, skip, filter_fields: dict[str, str | int | bool]) -> tuple[list[Trace], int]:
         async with self.pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor(row_factory=dict_row) as cur:
@@ -57,7 +57,7 @@ class TracesRepo:
                         filters_values = []
                     await cur.execute(f"""
                             SELECT * FROM {self.DATASETS_TABLE} {filters_str} ORDER BY created_at DESC LIMIT %s OFFSET %s
-                        """, (*filters_values, limit, offset), prepare=False)
+                        """, (*filters_values, limit, skip), prepare=False)
                     rows = await cur.fetchall()
                     await cur.execute(f"SELECT COUNT(*) AS total FROM {self.DATASETS_TABLE} {filters_str}", 
                         filters_values, prepare=False)
@@ -92,8 +92,8 @@ class TracesRepo:
         filters: list[tuple[str, str]] = []
         
         for k,v in filterFields.items():
-            if k == "dataset_id":
-                filters.append((" datasets_ids LIKE %s ", f'%%"{v}"%%'))
-            else:
+            # if k == "dataset_id":
+            #     filters.append((" datasets_ids LIKE %s ", f'%%"{v}"%%'))
+            # else:
                 filters.append((f" {k} = %s ", f'{v}'))
         return filters

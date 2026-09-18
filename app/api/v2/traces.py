@@ -1,8 +1,8 @@
 from app.core.auth import auth_dependency, require_role, UserRoles, User
 from app.services.v2.dependencies import get_traces_datasets_manager, TracesDatasetsManager
 from app.schemas.v2.traces.requests import TraceTypeRequest
-from app.schemas.v2.traces.responses import TraceDatasetResponse
-from app.schemas.common import Page, CreateTraceResponse
+from app.schemas.v2.traces.responses import TraceDatasetResponse, CreateTraceResponse
+from app.schemas.common import Page
 from app.core.exceptions import UnhandledTypeException, DataIntegrityException, NotFoundException
 from app.core.settings import get_settings
 
@@ -18,7 +18,7 @@ traces_router_v2 = APIRouter(prefix="/traces")
 
 @traces_router_v2.get("/", tags=["traces"], response_model=Page)
 async def get_traces(limit: int = Query(settings.app.api.v2.default_traces_limit, ge=1, le=_MAX_NUM_TRACES_PAGE, description="The max number of traces requested to be returned by this call."), 
-                    offset: int = Query(0, ge=0, description="Number of items to skip for pagination."), 
+                    skip: int = Query(0, ge=0, description="Number of items to skip for pagination."), 
                     datasetId: str | None = Query(None, description="The ID of the dataset that the traces must refer (at least once if the trace references multiple IDs)"), 
                     user: User = Depends(auth_dependency),
                     manager: TracesDatasetsManager = Depends(get_traces_datasets_manager)):
@@ -47,8 +47,8 @@ async def get_traces(limit: int = Query(settings.app.api.v2.default_traces_limit
         filter_fields: dict[str, str | int | bool] = {}
         if datasetId is not None:
             filter_fields["dataset_id"] = datasetId
-        traces,  total = await manager.get_traces(offset=offset, limit=limit, filter_fields=filter_fields)
-        return Page(total=total, data=traces, position=offset, size=limit)
+        traces,  total = await manager.get_traces(skip=skip, limit=limit, filter_fields=filter_fields)
+        return Page(total=total, data=traces, skip=skip, limit=limit)
     except (UnhandledTypeException, DataIntegrityException) as e:
         logger.error(e, exc_info=True)
         raise HTTPException(500, "Internal server error")
@@ -106,5 +106,5 @@ async def post_trace(trace_request: TraceTypeRequest = Body(..., description="Th
         A dict with one field, the ID of the newly created trace
     
     """
-    id = await manager.add(caller_id=user.user_id, trace=trace_request)
-    return CreateTraceResponse(id)
+    response = await manager.add(caller_id=user.user_id, trace=trace_request)
+    return response
