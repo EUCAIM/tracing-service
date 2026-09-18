@@ -20,7 +20,8 @@ if [ -z "$HOST" ] || [ -z "$PORT" ] || [ -z "$ADMIN_PASSWORD" ] || [ -z "$USER" 
 fi
 
 DEFAULT_DB=defaultdb
-SQL_SCRIPT="./v2.sql"
+script_dir=$(cd "$(dirname "$0")" && pwd)
+SQL_SCRIPT="${script_dir}/v2.sql"
 
 # PGPASSWORD="$ADMIN_PASSWORD" psql -h $HOST -p $PORT -U immudb -d $DB_NAME -c '\dt'
 # echo $?
