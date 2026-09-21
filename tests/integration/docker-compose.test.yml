@@ -1,0 +1,78 @@
+services:
+  keycloak-tracing-test:
+    image: quay.io/keycloak/keycloak:26.7
+    command: start-dev --import-realm
+    environment:
+      KC_HOSTNAME: keycloak-tracing-test
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${TRACING_KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${TRACING_TEST_DIR}/keycloak-realm.test.json.private:/opt/keycloak/data/import/realm-test.json:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c '</dev/tcp/127.0.0.1/8080'"
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  immudb-tracing-test:
+    image: codenotary/immudb:1.11.2-bullseye-slim
+    environment:
+      IMMUDB_ADMIN_PASSWORD: ${TRACING_IMMUDB_ADMIN_PASSWORD}
+      IMMUDB_WEB_SERVER: false
+      IMMUDB_METRICS_SERVER: false
+      IMMUDB_DEV: false
+    ports:
+      - "3322:3322"
+      - "5432:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c '</dev/tcp/127.0.0.1/3322'"
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  immudb-init:
+    build: 
+      context: ../../
+      dockerfile: Dockerfile_init
+    depends_on:
+      immudb-tracing-test:
+        condition: service_healthy
+    volumes:
+      - ./app-settings.test.yml:/opt/tracing/settings.yml:ro 
+      - ${TRACING_TEST_DIR}/app-settings-secret.test.yml.private:/opt/tracing/settings_secret.yml:ro
+      - ${TRACING_TEST_DIR}/IMMUDB_ADMIN_PASSWORD.private:/opt/tracing/IMMUDB_ADMIN_PASSWORD:ro
+    restart: "no"
+
+  tracing-test:
+    build: ../../
+    read_only: true
+    volumes:
+      - ./app-settings.test.yml:/opt/tracing/settings.yml:ro 
+      - ${TRACING_TEST_DIR}/app-settings-secret.test.yml.private:/opt/tracing/settings_secret.yml:ro 
+    ports:
+      - "10000:8080"
+    depends_on:
+      immudb-tracing-test:
+        condition: service_healthy
+      immudb-init:
+        condition: service_completed_successfully
+    environment:
+      TRACING_APP_SETTINGS: /opt/tracing/settings.yml
+      TRACING_APP_SETTINGS_SECRET: /opt/tracing/settings_secret.yml
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/').read()"]
+      interval: 2s
+      timeout: 5s
+      retries: 10

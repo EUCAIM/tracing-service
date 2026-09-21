@@ -1,0 +1,29 @@
+database:
+  # The name of the user utilized by the application to connect to ImmuDB; The password has to be set either via an ENV var or a file
+  user: test
+  # The host of the ImmuDB instance
+  host: immudb-tracing-test
+  # The port used to connect to the ImmuDB instance via the Postgres wire protocol
+  port: 5432
+  # The name of the database
+  name: tracing
+  pool:
+    min_size: 3
+    max_size: 3
+oidc:
+  # Base URL of the keycloak instance
+  url: http://keycloak-tracing-test:8080
+  # Keycloak realm that contains the client
+  realm: TEST-tracing
+  # The name of the keycloak client
+  client: tracing
+  # List of audiences that are accepted by this app
+  audiences: [
+    "tracing"
+  ]
+api:
+  # The prefix after the host/port that is added to the root of the path
+  prefix: ""
+  v2:
+    # Max num of traces that are returned by the get traces GET call
+    default_traces_limit: 20
