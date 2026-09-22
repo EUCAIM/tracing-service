@@ -21,7 +21,7 @@ async def get_traces(limit: int = Query(settings.app.api.v2.default_traces_limit
                     skip: int = Query(0, ge=0, description="Number of items to skip for pagination."), 
                     datasetId: str | None = Query(None, description="The ID of the dataset that the traces must refer (at least once if the trace references multiple IDs)"), 
                     userAction: str | None = Query(None, description="The user action one filters for."), 
-                    user: User = Depends(auth_dependency),
+                    user: User = Depends(require_role(UserRoles.READER)),
                     manager: TracesDatasetsManager = Depends(get_traces_datasets_manager)):
     """
     Returns a page of traces sorted descending by their creation date
@@ -61,7 +61,7 @@ async def get_traces(limit: int = Query(settings.app.api.v2.default_traces_limit
 
 @traces_router_v2.get("/{trace_id}", tags=["trace"], response_model=TraceDatasetResponse)
 async def get_traces(trace_id: str = Path(..., description="The ID of the trace that the user requests."),
-                    user: User = Depends(auth_dependency),
+                    user: User = Depends(require_role(UserRoles.READER)),
                     manager: TracesDatasetsManager = Depends(get_traces_datasets_manager)):
     """
     Returns the trace with the requested ID, or not found if one doesn't exist

@@ -37,11 +37,12 @@ def prepare_secrets():
         tracing_client = next((c for c in keycloak["clients"] if c["clientId"] == settings["oidc"]["client"]), None)
         if tracing_client is None:
             raise Exception("Can't find client tracing in keycloak conf file")
-        tracing_role = next((c for c in keycloak["roles"]["client"][settings["oidc"]["client"]] if c["name"] == UserRoles.WRITER), None)
-        if tracing_role is None:
-            raise Exception("Can't find writer role in keycloak conf file")
+        tracing_roles = [c for c in keycloak["roles"]["client"][settings["oidc"]["client"]]]
+        if len(tracing_roles) != 2:
+            raise Exception("There should be two roles available")
         tracing_client["id"] = str(uuid.uuid4())
-        tracing_role["containerId"] = tracing_client["id"]
+        for t in tracing_roles:
+            t["containerId"] = tracing_client["id"]
 
         with open(os.path.join(get_test_dir(), "keycloak-realm.test.json.private"), "w") as o:
             json.dump(keycloak, o)

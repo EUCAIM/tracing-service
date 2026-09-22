@@ -247,11 +247,64 @@
           "trace_writer"
         ]
       }
+    },
+    {
+      "username": "user_reader",
+      "firstName": "user",
+      "lastName": "reader",
+      "email": "user_reader@localhost.localhost",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-test"
+      ],
+      "clientRoles": {
+        "tracing": [
+          "trace_reader"
+        ]
+      }
+    },
+    {
+      "username": "user_reader_writer",
+      "firstName": "user",
+      "lastName": "reader_writer",
+      "email": "user_reader_writer@localhost.localhost",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-test"
+      ],
+      "clientRoles": {
+        "tracing": [
+          "trace_reader",
+          "trace_writer"
+        ]
+      }
     }
   ],
   "roles": {
     "client": {
       "tracing": [
+        {
+          "name": "trace_reader",
+          "description": "Can read traces",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "",
+          "attributes": {}
+        },
         {
           "name": "trace_writer",
           "description": "Can create traces",

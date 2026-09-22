@@ -9,7 +9,7 @@ import json
 from .common import script_dir, get_conf, get_access_token, get_user_id_access_token, get_app_settings
 from .common_data import trace_create_req, trace_update_req, trace_use_req
 from app.schemas.v2.traces.responses import CreateDatasetResponse, UseDatasetResponse, UpdateDatasetResponse
-
+from app.core.auth.user_roles import UserRoles
 
 @pytest.fixture(scope="module", autouse=True)
 def start_dependencies():
@@ -41,11 +41,11 @@ def reset_immudb():
 
 
 @pytest.mark.asyncio
-async def test_post_traces_all_types_get_them_user_writer_and_user_no_role():
+async def test_post_traces_all_types_user_reader_writer_get_them_user_writer_and_user_no_role():
     conf = get_conf()
-    access_token = await get_access_token("user_writer", conf["keycloak"]["users"]["user_writer"]["password"])
+    reader_writer_access_token = await get_access_token("user_reader_writer", conf["keycloak"]["users"]["user_reader_writer"]["password"])
     headers = {
-        "Authorization": f"Bearer {access_token}"
+        "Authorization": f"Bearer {reader_writer_access_token}"
     }
     async with httpx.AsyncClient() as client:
         resp = await client.post(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", headers=headers, json=trace_update_req.model_dump())
@@ -58,25 +58,35 @@ async def test_post_traces_all_types_get_them_user_writer_and_user_no_role():
         assert resp.status_code == 200, \
             "The trace should have been added successfully"
 
-        resp_get = await client.get(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", headers=headers)
-        assert resp_get.status_code == 200, \
-                "Problem when trying to get the traces with the user with writing rights"
+        resp_get_reader_writer = await client.get(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", 
+                    headers={"Authorization": f"Bearer {reader_writer_access_token}"})
+        assert resp_get_reader_writer.status_code == 200, \
+            f"User with {UserRoles.WRITER}, {UserRoles.READER} roles should be authorized to retrieve the traces"
 
-        access_token = await get_access_token("user_no_role", conf["keycloak"]["users"]["user_no_role"]["password"])
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
-        resp_get_user_no_roles = await client.get(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", headers=headers)
-        assert resp_get_user_no_roles.status_code == 200, \
-            "Problem when trying to get the traces with the user without roles"
+        writer_access_token = await get_access_token("user_writer", conf["keycloak"]["users"]["user_writer"]["password"])
+        resp_get_writer = await client.get(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", 
+            headers={"Authorization": f"Bearer {writer_access_token}"})
+        assert resp_get_writer.status_code == 403, \
+            f"User with {UserRoles.WRITER} role shouldn't be authorized to retrieve the traces"
 
-        assert resp_get.json() == resp_get_user_no_roles.json(), \
-            "Responses for user with trace writer role and usr without are not the same"
+        no_role_access_token = await get_access_token("user_no_role", conf["keycloak"]["users"]["user_no_role"]["password"])
+        resp_get_user_no_roles = await client.get(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", 
+            headers={"Authorization": f"Bearer {no_role_access_token}"})
+        assert resp_get_user_no_roles.status_code == 403, \
+            "User with no roles shouldn't be authorized to retrieve the traces"
+
+        reader_access_token = await get_access_token("user_reader", conf["keycloak"]["users"]["user_reader"]["password"])
+        resp_get_user_reader = await client.get(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", 
+            headers={"Authorization": f"Bearer {reader_access_token}"})
+        assert resp_get_user_reader.status_code == 200, \
+            f"User with {UserRoles.READER} role should be authorized to retrieve the traces"
+
+        assert resp_get_reader_writer.json() == resp_get_user_reader.json()
 
 @pytest.mark.asyncio
 async def test_post_traces_all_types_get_them_and_check_fields():
     conf = get_conf()
-    access_token = await get_access_token("user_writer", conf["keycloak"]["users"]["user_writer"]["password"])
+    access_token = await get_access_token("user_reader_writer", conf["keycloak"]["users"]["user_reader_writer"]["password"])
     headers = {
         "Authorization": f"Bearer {access_token}"
     }
@@ -177,15 +187,16 @@ async def test_post_traces_all_types_get_them_and_check_fields():
 async def test_post_trace_auth_create_use_update_get_by_action():
     conf = get_conf()
 
-    access_token = await get_access_token("user_writer", conf["keycloak"]["users"]["user_writer"]["password"])
+    access_token_reader_writer = await get_access_token("user_reader_writer", conf["keycloak"]["users"]["user_reader_writer"]["password"])
     headers = {
-        "Authorization": f"Bearer {access_token}"
+        "Authorization": f"Bearer {access_token_reader_writer}"
     }
     async with httpx.AsyncClient() as client:
         resp = await client.post(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", headers=headers, json=trace_create_req.model_dump())
         resp = await client.post(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", headers=headers, json=trace_update_req.model_dump())
         resp = await client.post(f"http://localhost:{conf['app']["port"]}/api/v2/traces/", headers=headers, json=trace_use_req.model_dump())
-        caller_id = get_user_id_access_token(access_token)
+        caller_id_writer = get_user_id_access_token(access_token_reader_writer)
+
 
         resp_get_traces = await client.get(f"http://localhost:{conf['app']["port"]}/api/v2/traces/?userAction={trace_create_req.userAction.value}&datasetId={trace_create_req.datasetId}", headers=headers)
         
@@ -200,7 +211,7 @@ async def test_post_trace_auth_create_use_update_get_by_action():
         tmp = CreateDatasetResponse(
             id=response["id"],
             version=2,
-            callerId=caller_id,
+            callerId=caller_id_writer,
             createdAt=datetime.datetime.now(),
             userAction=trace_create_req.userAction,
             userId=trace_create_req.userId,
@@ -225,7 +236,7 @@ async def test_post_trace_auth_create_use_update_get_by_action():
         tmp = UpdateDatasetResponse(
             id=response["id"],
             version=2,
-            callerId=caller_id,
+            callerId=caller_id_writer,
             createdAt=datetime.datetime.now(),
             userAction=trace_update_req.userAction,
             userId=trace_update_req.userId,
@@ -251,7 +262,7 @@ async def test_post_trace_auth_create_use_update_get_by_action():
             tmp = UseDatasetResponse(
                 id=response["id"],
                 version=2,
-                callerId=caller_id,
+                callerId=caller_id_writer,
                 createdAt=datetime.datetime.now(),
                 userAction=trace_use_req.userAction,
                 userId=trace_use_req.userId,
