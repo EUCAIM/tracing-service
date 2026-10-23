@@ -23,6 +23,8 @@ class DBPool:
             min_size=settings.pool.min_size,
             max_size=settings.pool.max_size,
             open=False,
+            reconnect_timeout=30,
+            check=AsyncConnectionPool.check_connection
         )
 
         await self._pool.open()
