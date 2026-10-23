@@ -22,10 +22,10 @@ services:
       timeout: 5s
       retries: 30
 
-  immudb-tracing-test:
+  tracing-db-test:
     image: codenotary/immudb:1.11.2-bullseye-slim
     environment:
-      IMMUDB_ADMIN_PASSWORD: ${TRACING_IMMUDB_ADMIN_PASSWORD}
+      IMMUDB_ADMIN_PASSWORD: ${TRACING_DB_ADMIN_PASSWORD}
       IMMUDB_WEB_SERVER: false
       IMMUDB_METRICS_SERVER: false
       IMMUDB_DEV: false
@@ -42,17 +42,19 @@ services:
       timeout: 5s
       retries: 30
 
-  immudb-init:
+  tracing-db-init:
     build: 
       context: ../../
       dockerfile: Dockerfile_init
     depends_on:
-      immudb-tracing-test:
+      tracing-db-test:
         condition: service_healthy
+    environment:
+      TRACING_DB_ADMIN_NAME: immudb
     volumes:
       - ./app-settings.test.yml:/opt/tracing/settings.yml:ro 
       - ${TRACING_TEST_DIR}/app-settings-secret.test.yml.private:/opt/tracing/settings_secret.yml:ro
-      - ${TRACING_TEST_DIR}/IMMUDB_ADMIN_PASSWORD.private:/opt/tracing/IMMUDB_ADMIN_PASSWORD:ro
+      - ${TRACING_TEST_DIR}/TRACING_DB_ADMIN_PASSWORD.private:/opt/tracing/TRACING_DB_ADMIN_PASSWORD:ro
     restart: "no"
 
   tracing-test:
@@ -64,9 +66,9 @@ services:
     ports:
       - "10000:8080"
     depends_on:
-      immudb-tracing-test:
+      tracing-db-test:
         condition: service_healthy
-      immudb-init:
+      tracing-db-init:
         condition: service_completed_successfully
     environment:
       TRACING_APP_SETTINGS: /opt/tracing/settings.yml

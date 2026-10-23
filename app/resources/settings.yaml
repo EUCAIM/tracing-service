@@ -1,9 +1,9 @@
 database:
-  # The name of the user utilized by the application to connect to ImmuDB; The password has to be set either via an ENV var or a file
+  # The name of the user utilized by the application to connect to Tracing DB; The password has to be set either via an ENV var or a file
   user: myuser
-  # The host of the ImmuDB instance
+  # The host of the Tracing DB instance
   host: localhost
-  # The port used to connect to the ImmuDB instance via the Postgres wire protocol
+  # The port used to connect to the Tracing DB instance via the Postgres wire protocol
   port: 5432
   # The name of the database
   name: tracing

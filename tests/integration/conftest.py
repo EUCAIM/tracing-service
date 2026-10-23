@@ -23,9 +23,9 @@ def prepare_secrets():
     with open(os.path.join(get_test_dir(), "app-settings-secret.test.yml.private"), "w") as f:
         yaml.dump(app_secret, f)
 
-    with open(os.path.join(get_test_dir(), "IMMUDB_ADMIN_PASSWORD.private"), "w") as f:
-        immudb_passwd = gen_password()
-        f.write(immudb_passwd)
+    with open(os.path.join(get_test_dir(), "TRACING_DB_ADMIN_PASSWORD.private"), "w") as f:
+        tracing_db_passwd = gen_password()
+        f.write(tracing_db_passwd)
 
     with open(os.path.join(script_dir(), "keycloak-realm.test.json"), "r") as f:
         keycloak = json.load(f)
@@ -49,7 +49,7 @@ def prepare_secrets():
 
 
     os.environ['TRACING_TEST_DIR'] = get_test_dir()
-    os.environ['TRACING_IMMUDB_ADMIN_PASSWORD'] = immudb_passwd
+    os.environ['TRACING_DB_ADMIN_PASSWORD'] = tracing_db_passwd
     os.environ['TRACING_KC_BOOTSTRAP_ADMIN_PASSWORD'] = gen_password()
 
     yield

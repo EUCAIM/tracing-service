@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: immudb-config
+  name: tracing-db-config
   namespace: tracing-service
 data:
   IMMUDB_WEB_SERVER: "false"

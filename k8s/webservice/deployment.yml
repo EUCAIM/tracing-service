@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tracing-service
+  name: tracing-webservice
   namespace: tracing-service
 spec:
   replicas: 0
@@ -9,15 +9,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: tracing-service
+      app: tracing-webservice
   template:
     metadata:
       labels:
-        app: tracing-service
+        app: tracing-webservice
     spec:
-      priorityClassName: core-services
-      nodeSelector:
-        chaimeleon.eu/target: core-services
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 60
 
@@ -38,7 +35,7 @@ spec:
             secretName: tracing-service-secrets
       containers:
         - name: webservice
-          image: tracing-service:1.0.0-alpha
+          image: tracing-service:1.0.1-alpha
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: tracing-service-config

@@ -26,16 +26,16 @@ def start_dependencies():
     )
 
 @pytest.fixture(scope="function", autouse=True)
-def reset_immudb():
+def reset_tracing_db():
     subprocess.run(
             ["docker", "compose", "-f", os.path.join(script_dir(), "docker-compose.test.yml"), 
-                "down", "immudb-tracing-test", "immudb-init", "tracing-test"],
+                "down", "tracing-db-test", "tracing-db-init", "tracing-test"],
             check=True
         )
 
     subprocess.run(
         ["docker", "compose", "-f", os.path.join(script_dir(), "docker-compose.test.yml"), "up", "-d", "--force-recreate", "--wait",
-            "immudb-tracing-test", "immudb-init", "tracing-test"],
+            "tracing-db-test", "tracing-db-init", "tracing-test"],
         check=True
     )
 

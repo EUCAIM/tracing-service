@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: immudb
+  name: tracing-db
   namespace: tracing-service
 spec:
   ports:
   - port: 5432
     targetPort: 5432
     protocol: TCP
-    name: immudb-psql
+    name: tracing-db-psql
   selector:
-    app: immudb
+    app: tracing-db

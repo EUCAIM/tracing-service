@@ -16,7 +16,10 @@ spec:
         runAsNonRoot: true
       containers:
         - name: psql
-          image: tracing-service-init:1.0.0-alpha
+          image: tracing-service-init:1.0.3-alpha
+          env:
+            - name: TRACING_DB_ADMIN_NAME
+              value: immudb
           volumeMounts:
             - name: tracing-service-config
               mountPath: /opt/tracing/settings.yml
@@ -25,7 +28,7 @@ spec:
               mountPath: /opt/tracing/settings_secret.yml
               subPath: settings_secret.yml
             - name: immudb-secrets
-              mountPath: /opt/tracing/IMMUDB_ADMIN_PASSWORD
+              mountPath: /opt/tracing/TRACING_DB_ADMIN_PASSWORD
               subPath: IMMUDB_ADMIN_PASSWORD
           securityContext:
             allowPrivilegeEscalation: false
@@ -47,5 +50,5 @@ spec:
         - name: immudb-secrets
           secret:
             defaultMode: 400
-            secretName: immudb-secrets
+            secretName: tracing-db-secrets
             optional: false

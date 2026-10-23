@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: immudb
+  name: tracing-db
   namespace: tracing-service
 spec:
   replicas: 1
@@ -9,15 +9,12 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: immudb
+      app: tracing-db
   template:
     metadata:
       labels:
-        app: immudb
+        app: tracing-db
     spec:
-      priorityClassName: core-services
-      nodeSelector:
-        chaimeleon.eu/target: core-services
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 60
 
@@ -28,18 +25,18 @@ spec:
         fsGroup: 3322
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
-        - name: immudb
+        - name: tracing-db
           image: codenotary/immudb:1.11.2-bullseye-slim
           imagePullPolicy: IfNotPresent
           ports:
-            - name: immudb-psql
+            - name: tracing-db-psql
               containerPort: 5432
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: immudb-config
+                name: tracing-db-config
             - secretRef: 
-                name: immudb-secrets
+                name: tracing-db-secrets
 
           securityContext:
             allowPrivilegeEscalation: false
@@ -50,10 +47,10 @@ spec:
           resources:
             requests:
               cpu: 250m
-              memory: 4Gi
+              memory: 1Gi
             limits:
               cpu: "1"
-              memory: 4Gi
+              memory: 1Gi
           volumeMounts:
           - mountPath: /var/lib/immudb
             name: immudb-storage
@@ -62,4 +59,4 @@ spec:
       volumes:
         - name: immudb-storage
           persistentVolumeClaim:
-            claimName: immudb-data
+            claimName: tracing-db-data
