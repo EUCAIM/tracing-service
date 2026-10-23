@@ -95,13 +95,8 @@ async def verify_token(token: str) -> User:
     try:
         decoded_token = decode(token, keyset)
     except JoseError:
-        try:
-            logger.info("Try to get a new set of keys from Keycloak.")
-            keyset: KeySet = await get_keyset(force_refresh=True)
-            decoded_token = decode(token, keyset)
-        except JoseError as e:
-            logger.error(f"Token decoding failed: {e}")
-            raise HTTPException(status_code=401, detail="Invalid token")
+        logger.error(f"Token decoding failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid token")
             
 
     try:
