@@ -20,5 +20,6 @@ data:
       audiences: [
       ]
     api:
+      prefix: ""
       v2:
         default_traces_limit: 20
