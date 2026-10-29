@@ -94,7 +94,7 @@ async def verify_token(token: str) -> User:
     )
     try:
         decoded_token = decode(token, keyset)
-    except JoseError:
+    except JoseError as e:
         logger.error(f"Token decoding failed: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
             
