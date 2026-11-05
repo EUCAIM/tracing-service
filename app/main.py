@@ -18,7 +18,10 @@ async def lifespan(app: FastAPI):
     yield
     await dbpool.stop()
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(title=settings.app_name,
+    version=settings.version,
+    description="",
+    lifespan=lifespan)
 
 app_info = AppInfo(version=settings.version, name=settings.app_name)
 
