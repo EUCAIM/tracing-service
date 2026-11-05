@@ -13,14 +13,14 @@ def get_settings() -> Settings:
     if _settings is None:
         path = os.getenv(f"{ENV_VARS_PREFIX}APP_SETTINGS", Path(__file__).parent.parent / "resources" / "settings.yaml") 
         raw_settings = load_settings(path)
-        name, version = load_name_version_from_toml()
-        _settings = Settings(**{"app_name": name, "version": version, "app": raw_settings})
+        name, version, description = load_from_toml()
+        _settings = Settings(**{"app_name": name, "version": version, "description": description, "app": raw_settings})
     return _settings
 
-def load_name_version_from_toml():
+def load_from_toml():
     pyproject = Path(__file__).resolve().parents[2] / "pyproject.toml"
     data = tomllib.loads(pyproject.read_text())
-    return data["project"]["name"], data["project"]["version"]
+    return data["project"]["name"], data["project"]["version"], data["project"]["description"]
 
 class V2Settings(BaseModel):
     default_traces_limit: int
@@ -57,3 +57,4 @@ class Settings(BaseSettings):
     app: AppSettings
     app_name: str
     version: str
+    description: str
