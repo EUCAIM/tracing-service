@@ -9,6 +9,9 @@ app_info = AppInfo(version=get_settings().version, name=get_settings().app_name)
 
 @router_api_v2.get("/", response_model=AppInfo)
 def root():
+    """
+        Returns the application information
+    """
     return app_info
 
 
